@@ -1,0 +1,688 @@
+;Alex Rotteveel, This is a program that plays connect 4
+;It also includes an AI to play against. Heads up all
+;required function are present you just may have to search
+;for them a bit, I put my blood sweat and tears into
+;perfecting the AI so I have loads of helper functions
+;that are similar to the required functions but take
+;different parameters like a list thats been manipulated.
+
+
+
+(define AJRGameState 0)
+
+(define(AJRStartGame)
+   (begin
+      (set! AJRGameState '(1(0 0 0 0 0 0 0)(0 0 0 0 0 0 0)
+      (0 0 0 0 0 0 0)(0 0 0 0 0 0 0)(0 0 0 0 0 0 0)(0 0 0 0 0 0 0)))
+      (display "I am Cyber Hero.")(newline)
+      #t
+   )
+)
+(define(AJRShowGame)
+   (begin
+      (AJRShowPlayer) (newline)
+      (display (car(cdr(cdr(cdr(cdr(cdr(cdr AJRGameState))))))))
+      (newline)
+      (display (car(cdr(cdr(cdr(cdr(cdr AJRGameState)))))))
+      (newline)
+      (display (car(cdr(cdr(cdr(cdr AJRGameState))))))
+      (newline)
+      (display (car(cdr(cdr(cdr AJRGameState)))))
+      (newline)
+      (display (car(cdr(cdr AJRGameState))))
+      (newline)
+      (display (car(cdr AJRGameState)))
+      (newline)
+      #t
+   )
+)
+(define(AJRShowPlayer)
+   (if(=(car AJRGameState) 1)
+      (display "Player 1, your token is 1")
+      (display "Player 2, your token is 2")
+   )
+)    
+(define(AJRMarkMove col)
+   (if(not(AJRLegalMoveP col))
+      (display "Not a legal Move.")
+      (set! AJRGameState      
+         (cons (AJRSwapPlayers) (AJRsetCell (cdr AJRGameState)
+         (AJRGetRow (cdr AJRGameState) col 1) col (car AJRGameState)))
+      )
+   )
+   col
+)
+(define(AJRWinP col)
+   (if
+   (AJRHorzWin (AJRFindLastRow 1 col (cdr AJRGameState))
+   (if(<(- col 3) 1) 1 (- col 3)) (AJRSwapPlayers) 0 
+   (cdr AJRGameState))
+      #t
+      (if
+      (AJRVertWin (if(<(-(AJRFindLastRow 1 col (cdr AJRGameState))3)
+      1) 1 (-(AJRFindLastRow 1 col (cdr AJRGameState))3)) col
+      (AJRSwapPlayers) 0 (cdr AJRGameState))
+         #t
+         (if
+         (AJRDiagonalWin (AJRFindLastRow 1 col (cdr AJRGameState))
+         col (AJRSwapPlayers) (cdr AJRGameState))
+            #t
+            #f
+         )
+      )
+   )
+)
+(define(AJRWillWinP col)
+   (if(not(AJRLegalMoveP col))
+      #f 
+      (if(AJRDiagonalWin (AJRGetRow (cdr AJRGameState) col 1)
+      col (car AJRGameState) (AJRsetCell (cdr AJRGameState)
+      (AJRGetRow (cdr AJRGameState) col 1) col (car AJRGameState)))
+         #t
+         (if(AJRVertWin (if(<(-(AJRGetRow (cdr AJRGameState) col 1)3)
+         1) 1 (-(AJRGetRow (cdr AJRGameState) col 1)3)) col
+         (car AJRGameState) 0 (AJRsetCell (cdr AJRGameState)
+         (AJRGetRow (cdr AJRGameState) col 1) col (car AJRGameState)))
+            #t
+            (if(AJRHorzWin (AJRGetRow (cdr AJRGameState) col 1)
+            (if(<(- col 3) 1) 1 (- col 3)) (car AJRGameState)
+            0 (AJRsetCell (cdr AJRGameState) 
+            (AJRGetRow (cdr AJRGameState) col 1) col (car AJRGameState)))
+               #t
+               #f
+            )
+         )
+      ) 
+   )
+)
+(define(AJROtherPlayerWillWinP col)
+   (if(not(AJRLegalMoveP col))
+      #f
+      (if(AJRDiagonalWin (AJRGetRow (cdr AJRGameState) col 1)
+      col (AJRSwapPlayers) (AJRsetCell (cdr AJRGameState)
+      (AJRGetRow (cdr AJRGameState) col 1) col (AJRSwapPlayers)))
+         #t
+         (if(AJRVertWin (if(<(-(AJRGetRow (cdr AJRGameState) col 1)3)
+         1) 1 (-(AJRGetRow (cdr AJRGameState) col 1)3)) col
+         (AJRSwapPlayers) 0 (AJRsetCell (cdr AJRGameState)
+         (AJRGetRow (cdr AJRGameState) col 1) col (AJRSwapPlayers)))
+            #t
+            (if(AJRHorzWin (AJRGetRow (cdr AJRGameState) col 1)
+            (if(<(- col 3) 1) 1 (- col 3)) (AJRSwapPlayers)
+            0 (AJRsetCell (cdr AJRGameState) 
+            (AJRGetRow (cdr AJRGameState) col 1) col (AJRSwapPlayers)))
+               #t
+               #f
+            )
+         )
+      ) 
+   )
+)
+(define(AJRMakeMove)
+   (if(AJRSearchGridWin 1)
+      (AJRMarkMove (AJRSearchGridNumWin 1))
+      (if(AJRSearchGridForOtherPlayerWin 1)
+         (AJRMarkMove (AJRSearchGridForOtherPlayerNumWin 1))
+         (AJRMarkMove (AJRChooseBestMove (+ 1 (random 7)) ))               
+      )
+   )
+)
+(define(AJRChooseBestMove col)
+   (if(AJRNoMoveToMake 1)      
+      (AJRConcedeGame 1)
+      (if(=(AJRgetCell (cdr AJRGameState) 1 4) 0)
+         4
+         (if(=(AJRgetCell (cdr AJRGameState) 2 4) 0)
+            4
+            (if(AJRSearchForGoodMove 1)
+               (AJRSearchForGoodMoveNum 1)   
+               (if(AJRSearchGridForOtherPlayer3OfKindPriority 1)
+                  (AJRSearchGridForOtherPlayer3OfKindNumPriority 1)   
+                  (if(AJRSearchGridFor3OfKindPriority 1)
+                     (AJRSearchGridFor3OfKindNumPriority 1)  
+                     (if(AJRSearchGridForOtherPlayer3OfKind 1)
+                        (AJRSearchGridForOtherPlayer3OfKindNum 1)
+                        (if(AJRSearchGridFor3OfKind 1)
+                           (AJRSearchGridFor3OfKindNum 1)
+                           (if(and(=(AJRgetCell (cdr AJRGameState) 2 3) 0)(not(=(AJRgetCell (cdr AJRGameState) 1 3) 0)))
+                              3
+                              (if(and(=(AJRgetCell (cdr AJRGameState) 2 5) 0)(not(=(AJRgetCell (cdr AJRGameState) 1 5) 0)))     
+                                 5
+                                 (if(=(AJRgetCell (cdr AJRGameState) 3 4) 0)
+                                    4
+                                    (if(=(AJRgetCell (cdr AJRGameState) 4 4) 0)
+                                       4
+                                       (if(=(AJRgetCell (cdr AJRGameState) 5 4) 0)
+                                          4
+                                          (if(=(AJRgetCell (cdr AJRGameState) 6 4) 0)
+                                             4
+                                             (if(and(AJRLegalMoveP col)(not(AJRBadMove col)))
+                                                col
+                                                (AJRChooseBestMove (+ 1 (random 7)))
+                                       
+                                             )
+                                          )
+                                       )
+                                    )
+                                 )
+                              )
+                           )
+                        )
+                     )
+                  )
+               )
+            )
+         )
+      ) 
+   )
+)
+(define(AJRNoMoveToMake col)
+   (if(> col 7)
+      #t
+      (if(or(not(AJRLegalMoveP col))(AJRBadMove col))
+         (AJRNoMoveToMake (+ col 1))
+         #f
+      )
+   )
+)
+(define(AJRConcedeGame col)
+   (if(AJRBadMove col)
+      col
+      (AJRConcedeGame (+ col 1))
+   )
+)
+(define(AJRCheckForBadMove col lst)
+   (if(not(AJRCheckLegalMoveP col lst))
+      #f   
+      (if(AJRDiagonalWin (AJRGetRow lst col 1)
+      col (AJRSwapPlayers) (AJRsetCell lst
+      (AJRGetRow lst col 1) col (AJRSwapPlayers)))
+         #t
+         (if(AJRVertWin (if(<(-(AJRGetRow lst col 1)3)
+         1) 1 (-(AJRGetRow lst col 1)3)) col
+         (AJRSwapPlayers) 0 (AJRsetCell lst
+         (AJRGetRow lst col 1) col (AJRSwapPlayers)))
+            #t
+            (if(AJRHorzWin (AJRGetRow lst col 1)
+            (if(<(- col 3) 1) 1 (- col 3)) (AJRSwapPlayers)
+            0 (AJRsetCell lst 
+            (AJRGetRow lst col 1) col (AJRSwapPlayers)))
+               #t
+               #f
+            )
+         )
+      ) 
+   )
+)
+(define(AJRCheckForGoodMove col lst)
+   (if(or(not(AJRCheckLegalMoveP col lst))(AJRCheckBadMove col lst))
+      #f
+      (if(AJRDiagonalWin (AJRGetRow lst col 1)
+      col (car AJRGameState) (AJRsetCell lst
+      (AJRGetRow lst col 1) col (car AJRGameState)))
+         #t
+         (if(AJRVertWin (if(<(-(AJRGetRow lst col 1)3)
+         1) 1 (-(AJRGetRow lst col 1)3)) col
+         (car AJRGameState) 0 (AJRsetCell lst
+         (AJRGetRow lst col 1) col (car AJRGameState)))
+            #t
+            (if(AJRHorzWin (AJRGetRow lst col 1)
+            (if(<(- col 3) 1) 1 (- col 3)) (car AJRGameState)
+            0 (AJRsetCell lst 
+            (AJRGetRow lst col 1) col (car AJRGameState)))
+               #t
+               #f
+            )
+         )
+      ) 
+   )
+)
+(define(AJRCheckForGoodMoveForOtherPlayer col lst)
+   (if(or(not(AJRCheckLegalMoveP col lst))(AJRCheckBadMove col lst))
+      #f
+      (if(AJRDiagonalWin (AJRGetRow lst col 1)
+      col (AJRSwapPlayers) (AJRsetCell lst
+      (AJRGetRow lst col 1) col (AJRSwapPlayers)))
+         #t
+         (if(AJRVertWin (if(<(-(AJRGetRow lst col 1)3)
+         1) 1 (-(AJRGetRow lst col 1)3)) col
+         (AJRSwapPlayers) 0 (AJRsetCell lst
+         (AJRGetRow lst col 1) col (AJRSwapPlayers)))
+            #t
+            (if(AJRHorzWin (AJRGetRow lst col 1)
+            (if(<(- col 3) 1) 1 (- col 3)) (AJRSwapPlayers)
+            0 (AJRsetCell lst 
+            (AJRGetRow lst col 1) col (AJRSwapPlayers)))
+               #t
+               #f
+            )
+         )
+      ) 
+   )
+)
+(define(AJRGoodMove col)
+   (if(not(AJRLegalMoveP col))
+      #f 
+      (if(not(AJRIsColFiveOpen col))
+         #f
+         (if(AJRCheckForGoodMove col (AJRsetCell (cdr AJRGameState)
+         (AJRGetRow (cdr AJRGameState) col 1) col (car AJRGameState)))
+            #t
+            #f
+         )
+      ) 
+   )
+)
+(define(AJRBadMove col)
+   (if(not(AJRLegalMoveP col))
+      #f 
+      (if(not(AJRIsColFiveOpen col))
+         #f
+         (if(AJRCheckForBadMove col (AJRsetCell (cdr AJRGameState)
+         (AJRGetRow (cdr AJRGameState) col 1) col (car AJRGameState)))
+            #t
+            #f
+         )
+      ) 
+   )
+)
+(define(AJRCheckBadMove col lst)
+   (if(not(AJRCheckLegalMoveP col lst))
+      #f 
+      (if(not(AJRCheckIsColFiveOpen col lst))
+         #f
+         (if(AJRCheckForBadMove col (AJRsetCell lst
+         (AJRGetRow lst col 1) col (car AJRGameState)))
+            #t
+            #f
+         )
+      ) 
+   )
+)
+(define(AJRSearchForGoodMove col)
+   (if(> col 7)
+      #f
+      (if(and(AJRGoodMove col)(not(AJRBadMove col)))
+         #t
+         (AJRSearchForGoodMove (+ col 1))
+      )
+   )
+)
+(define(AJRSearchForGoodMoveNum col)
+   (if(AJRGoodMove col)
+      col
+      (AJRSearchForGoodMoveNum (+ col 1))
+   )
+)  
+(define(AJRSearchGridFor3OfKindPriority col)
+   (if(> col 7)
+      #f
+      (if(and(and(AJRWillGet3InARow col)(not(AJRBadMove col)))(AJRLegalMoveP col))
+         (AJRIsMoveWorthToInclude 1 (AJRsetCell (cdr AJRGameState) (AJRGetRow (cdr AJRGameState) col 1) col (car AJRGameState)))
+         (AJRSearchGridFor3OfKindPriority (+ col 1))
+      )
+   )
+)
+(define(AJRIsMoveWorthToInclude col lst)
+  (if(> col 7)
+      #f
+      (if(AJRCheckForGoodMove col lst)
+         #t
+         (AJRIsMoveWorthToInclude (+ col 1) lst)
+      )
+   )
+)
+(define(AJRSearchGridFor3OfKindNumPriority col)
+   (if(and(and(AJRWillGet3InARow col)(not(AJRBadMove col)))(AJRLegalMoveP col))
+      (AJRIsMoveWorthToIncludeNum 1 (AJRsetCell (cdr AJRGameState) (AJRGetRow (cdr AJRGameState) col 1) col (car AJRGameState)))
+      (AJRSearchGridFor3OfKindNumPriority (+ col 1))
+   )
+)
+(define(AJRIsMoveWorthToIncludeNum col lst)
+   (if(AJRCheckForGoodMove col lst)
+      col
+      (AJRIsMoveWorthToIncludeNum (+ col 1) lst)
+   )
+)
+(define(AJRSearchGridForOtherPlayer3OfKind col)
+   (if(> col 7)
+      #f
+      (if(and(and(AJROtherPlayerWillGet3InARow col)(not(AJRBadMove col)))(AJRLegalMoveP col))
+         #t
+         (AJRSearchGridForOtherPlayer3OfKind (+ 1 col))
+      )
+   )
+)
+(define(AJRSearchGridForOtherPlayer3OfKindNum col)
+   (if(and(and(AJROtherPlayerWillGet3InARow col)(not(AJRBadMove col)))(AJRLegalMoveP col))
+      col
+      (AJRSearchGridForOtherPlayer3OfKindNum (+ 1 col))   
+   )
+)
+
+(define(AJRSearchGridFor3OfKind col)
+   (if(> col 7)
+      #f
+      (if(and(AJRWillGet3InARow col)(not(AJRBadMove col)))
+         #t
+         (AJRSearchGridFor3OfKind (+ col 1))
+      )
+   )
+)
+(define(AJRSearchGridFor3OfKindNum col)
+   (if(and(AJRWillGet3InARow col)(not(AJRBadMove col)))
+      col
+      (AJRSearchGridFor3OfKindNum (+ col 1))
+   )
+)
+(define(AJRSearchGridWin col)
+   (if(> col 7)
+      #f
+      (if(AJRWillWinP col)
+         #t
+         (AJRSearchGridWin (+ col 1))
+      )
+   )
+)
+(define(AJRSearchGridNumWin col)
+   (if(AJRWillWinP col)
+      col
+      (AJRSearchGridNumWin (+ col 1))
+   )
+)  
+(define(AJRSearchGridForOtherPlayerWin col)
+   (if(> col 7)
+      #f
+      (if(AJROtherPlayerWillWinP col)
+         #t
+         (AJRSearchGridForOtherPlayerWin (+ col 1))
+      )
+   )
+)
+(define(AJRSearchGridForOtherPlayerNumWin col)
+   (if(AJROtherPlayerWillWinP col)
+      col
+      (AJRSearchGridForOtherPlayerNumWin (+ col 1))
+   )
+)
+(define(AJRDiagonal3OfKind row col item lst)
+   (if(=(+(AJRGoDownAndLeft row col 1 item 0 lst)
+   (AJRGoUpAndRight row col 1 item 0 lst)) 2)
+      #t
+      (if(=(+(AJRGoUpAndLeft row col 1 item 0 lst)
+      (AJRGoDownAndRight row col 1 item 0 lst)) 2)
+         #t
+         #f
+      )
+   )
+) 
+(define(AJRHorz3OfKind row col item counter lst stop)
+   (if(and(or(> col 7)(= stop 4))(not(= counter 3)))
+      #f   
+      (if(= counter 3)
+         #t
+         (if(=(AJRgetCell lst row col) item)
+            (AJRHorz3OfKind row (+ col 1) item (+ counter 1) lst (+ stop 1))
+            (AJRHorz3OfKind row (+ col 1) item (if(=(AJRgetCell lst row col) 0) counter 0) 
+            lst (+ stop 1))
+         )  
+      )
+   )
+)
+(define(AJRVert3OfKind row col item counter lst stop)
+   (if(and(or(> row 6)(= stop 4))(not(= counter 3)))
+      #f
+      (if(= counter 3)
+         #t
+         (if(=(AJRgetCell lst row col) item)
+            (AJRVert3OfKind (+ row 1) col item (+ counter 1) lst (+ stop 1))
+            (AJRVert3OfKind (+ row 1) col item (if(=(AJRgetCell lst row col) 0) counter 0)  
+            lst (+ stop 1)) 
+         )
+      )
+   )
+)
+(define(AJRWillGet3InARow col)
+   (if(or(not(AJRLegalMoveP col))(AJRBadMove col))
+      #f 
+      (if(AJRDiagonal3OfKind (AJRGetRow (cdr AJRGameState) col 1)
+      col (car AJRGameState) (AJRsetCell (cdr AJRGameState)
+      (AJRGetRow (cdr AJRGameState) col 1) col (car AJRGameState)))
+         #t
+         (if(AJRVert3OfKind (if(<(-(AJRGetRow (cdr AJRGameState) col 1)2)
+         1) 1 (-(AJRGetRow (cdr AJRGameState) col 1)2)) col
+         (car AJRGameState) 0 (AJRsetCell (cdr AJRGameState)
+         (AJRGetRow (cdr AJRGameState) col 1) col (car AJRGameState))0)
+            #t
+            (if(AJRHorz3OfKind (AJRGetRow (cdr AJRGameState) col 1)
+            (if(<(- col 2) 1) 1 (- col 2)) (car AJRGameState)
+            0 (AJRsetCell (cdr AJRGameState) 
+            (AJRGetRow (cdr AJRGameState) col 1) col (car AJRGameState))0)
+               #t
+               #f
+            )
+         )
+      ) 
+   )
+)
+(define(AJROtherPlayerWillGet3InARow col)
+   (if(or(not(AJRLegalMoveP col))(AJRBadMove col))
+      #f 
+      (if(AJRDiagonal3OfKind (AJRGetRow (cdr AJRGameState) col 1)
+      col (AJRSwapPlayers) (AJRsetCell (cdr AJRGameState)
+      (AJRGetRow (cdr AJRGameState) col 1) col (AJRSwapPlayers)))
+         #t
+         (if(AJRVert3OfKind (if(<(-(AJRGetRow (cdr AJRGameState) col 1)2)
+         1) 1 (-(AJRGetRow (cdr AJRGameState) col 1)2)) col
+         (AJRSwapPlayers) 0 (AJRsetCell (cdr AJRGameState)
+         (AJRGetRow (cdr AJRGameState) col 1) col (AJRSwapPlayers))0)
+            #t
+            (if(AJRHorz3OfKind (AJRGetRow (cdr AJRGameState) col 1)
+            (if(<(- col 2) 1) 1 (- col 2)) (AJRSwapPlayers)
+            0 (AJRsetCell (cdr AJRGameState) 
+            (AJRGetRow (cdr AJRGameState) col 1) col (AJRSwapPlayers))0)
+               #t
+               #f
+            )
+         )
+      )
+   ) 
+)
+(define(AJRSearchGridForOtherPlayer3OfKindPriority col)
+   (if(> col 7)
+      #f
+      (if(and(and(AJROtherPlayerWillGet3InARow col)(not(AJRBadMove col)))(AJRLegalMoveP col))
+         (AJRIsMoveWorthToBlock 1 (AJRsetCell (cdr AJRGameState) (AJRGetRow (cdr AJRGameState) col 1) col (AJRSwapPlayers)))
+         (AJRSearchGridForOtherPlayer3OfKindPriority (+ col 1))
+      )
+   )
+)
+(define(AJRSearchGridForOtherPlayer3OfKindNumPriority col)
+   (if(and(and(AJROtherPlayerWillGet3InARow col)(not(AJRBadMove col)))(AJRLegalMoveP col))
+      (AJRIsMoveWorthToBlockNum 1 (AJRsetCell (cdr AJRGameState) (AJRGetRow (cdr AJRGameState) col 1) col (AJRSwapPlayers)))
+      (AJRSearchGridForOtherPlayer3OfKindNumPriority (+ col 1))
+   )
+)
+(define(AJRIsMoveWorthToBlock col lst)
+   (if(> col 7)
+      #f
+      (if(AJRCheckForGoodMoveForOtherPlayer col lst)
+         #t
+         (AJRIsMoveWorthToBlock (+ col 1) lst)
+      )
+   )
+)
+(define(AJRIsMoveWorthToBlockNum col lst)
+   (if(AJRCheckForGoodMoveForOtherPlayer col lst)
+      col
+      (AJRIsMoveWorthToBlockNum (+ col 1) lst)
+   )
+)
+(define(AJRDiagonalWin row col item lst)
+   (if(>=(+(AJRGoDownAndLeft row col 1 item 0 lst)
+   (AJRGoUpAndRight row col 1 item 0 lst)) 3)
+      #t
+      (if(>=(+(AJRGoUpAndLeft row col 1 item 0 lst)
+      (AJRGoDownAndRight row col 1 item 0 lst)) 3)
+         #t
+         #f
+      )
+   )
+) 
+(define(AJRGoDownAndLeft row col x item counter lst)
+   (if(or(< (- row x) 1) (< (- col x) 1))
+      counter
+      (if(=(AJRgetCell lst (- row x) (- col x))item)
+         (AJRGoDownAndLeft row col (+ x 1) item (+ counter 1) lst)  
+         counter
+      )
+   )
+)
+(define(AJRGoUpAndRight row col x item counter lst)
+   (if(or(> (+ row x) 6) (> (+ col x) 7))
+      counter
+      (if(=(AJRgetCell lst (+ row x) (+ col x))item)
+         (AJRGoUpAndRight row col (+ x 1) item (+ counter 1) lst)  
+         counter
+      )
+   )
+)
+(define(AJRGoUpAndLeft row col x item counter lst)
+   (if(or(> (+ row x) 6) (< (- col x) 1))
+      counter
+      (if(=(AJRgetCell lst (+ row x) (- col x))item)
+         (AJRGoUpAndLeft row col (+ x 1) item (+ counter 1) lst)  
+         counter
+      )
+   )
+)
+(define(AJRGoDownAndRight row col x item counter lst)
+   (if(or(< (- row x) 1) (> (+ col x) 7))
+      counter
+      (if(=(AJRgetCell lst (- row x) (+ col x))item)
+         (AJRGoDownAndRight row col (+ x 1) item (+ counter 1) lst)  
+         counter
+      )
+   )
+)
+(define(AJRVertWin row col item counter lst)
+   (if(and(> row 6)(not(= counter 4)))
+      #f
+      (if(= counter 4)
+         #t
+         (if(=(AJRgetCell lst row col) item)
+            (AJRVertWin (+ row 1) col item (+ counter 1) lst)
+            (AJRVertWin (+ row 1) col item 0 lst) 
+         )
+      )
+   )
+)
+(define(AJRHorzWin row col item counter lst)
+   (if(and(> col 7)(not(= counter 4)))
+      #f   
+      (if(= counter 4)
+         #t
+         (if(=(AJRgetCell lst row col) item)
+            (AJRHorzWin row (+ col 1) item (+ counter 1) lst)
+            (AJRHorzWin row (+ col 1) item 0 lst)
+         )  
+      )
+   )
+)
+(define(AJRFindLastRow row col lst)
+   (if(= row 7)
+      (- row 1)
+      (if(=(AJRgetCell lst row col) 0)
+         (- row 1)
+         (AJRFindLastRow (+ row 1) col lst)
+      )
+   )
+)                
+(define(AJRLegalMoveP col)
+   (if(=(AJRgetCell (cdr AJRGameState) 6 col) 0)
+      #t
+      #f
+   )
+)
+(define(AJRCheckLegalMoveP col lst)
+   (if(=(AJRgetCell lst 6 col) 0)
+      #t
+      #f
+   )
+)
+(define(AJRIsColFiveOpen col)
+   (if(=(AJRgetCell (cdr AJRGameState) 5 col) 0)
+      #t
+      #f
+   )
+)
+(define(AJRCheckIsColFiveOpen col lst)
+   (if(=(AJRgetCell lst 5 col) 0)
+      #t
+      #f
+   )
+)
+(define(AJRSwapPlayers)
+   (if(=(car AJRGameState) 1) 2 1
+   )
+)
+(define(AJRGetRow lst col row)
+   (if(AJRCheckCol (car lst) col)
+      row
+      (AJRGetRow (cdr lst) col (+ row 1))
+   )
+)
+(define(AJRCheckCol lst col)
+   (if(null? lst)
+      #f
+      (if(and(= col 1)(=(car lst) 0))
+         #t
+         (AJRCheckCol (cdr lst) (- col 1))
+      )
+   )
+)
+(define(AJRsetCell matrix row column item)
+   (if(null? matrix)
+      '()
+      (if(> row 1)
+         (cons (car matrix) (AJRsetCell (cdr matrix) 
+         (- row 1) column item))
+            (cons (AJRsetCellVector (car matrix) column item)
+            (cdr matrix))
+      )
+   )
+)
+(define(AJRsetCellVector vector column item)
+   (if(null? vector)
+      '()
+      (if(> column 1)
+         (cons (car vector) (AJRsetCellVector (cdr vector)
+         (- column 1) item))
+            (cons item (cdr vector))
+      )
+   )
+)  
+(define(AJRgetCell matrix row column)
+   (if(null? matrix)
+      '()
+      (if(> row 1)
+         (AJRgetCell (cdr matrix) (- row 1)  column)
+         (AJRgetCellOfVector (car matrix) column)
+      )
+   )
+)
+(define(AJRgetCellOfVector vector column)
+   (if(null? vector)
+      '()
+      (if(> column 1)
+         (AJRgetCellOfVector (cdr vector) (- column 1))
+         (car vector)
+      )
+   )
+)
+
+
+         
+      
+   
+
